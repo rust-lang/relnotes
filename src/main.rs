@@ -214,7 +214,7 @@ fn map_to_line_items<'a>(prefix: &'static str,
 {
     iter.into_iter().map(|o| {
         format!(
-            "- [{prefix}{title}][{number}]",
+            "- [{title}][{prefix}{number}]",
             prefix = prefix,
             title = o["title"].as_str().unwrap(),
             number = o["number"],

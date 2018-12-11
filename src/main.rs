@@ -13,23 +13,23 @@ use askama::Template;
 use chrono::prelude::*;
 use chrono::Duration;
 
-#[derive(Template)]
+#[derive(Clone, Template)]
 #[template(path = "relnotes.md")]
-struct ReleaseNotes {
-    version: String,
+struct ReleaseNotes<'a> {
+    version: &'a str,
     date: NaiveDate,
-    language_relnotes: String,
-    language_unsorted: String,
-    libraries_relnotes: String,
-    libraries_unsorted: String,
-    compiler_relnotes: String,
-    compiler_unsorted: String,
-    cargo_relnotes: String,
-    cargo_unsorted: String,
-    unsorted_relnotes: String,
-    unsorted: String,
-    links: String,
-    cargo_links: String,
+    language_relnotes: &'a str,
+    language_unsorted: &'a str,
+    libraries_relnotes: &'a str,
+    libraries_unsorted: &'a str,
+    compiler_relnotes: &'a str,
+    compiler_unsorted: &'a str,
+    cargo_relnotes: &'a str,
+    cargo_unsorted: &'a str,
+    unsorted_relnotes: &'a str,
+    unsorted: &'a str,
+    links: &'a str,
+    cargo_links: &'a str,
 }
 
 fn main() {
@@ -84,20 +84,20 @@ fn main() {
     let cargo_links = map_to_link_items("cargo/", cargo_issues.iter());
 
     let relnotes = ReleaseNotes {
-        version,
+        version: &version,
         date: (end + six_weeks).naive_utc(),
-        language_relnotes,
-        language_unsorted,
-        libraries_relnotes,
-        libraries_unsorted,
-        compiler_relnotes,
-        compiler_unsorted,
-        cargo_relnotes,
-        cargo_unsorted,
-        unsorted_relnotes,
-        unsorted,
-        links,
-        cargo_links,
+        language_relnotes: &language_relnotes,
+        language_unsorted: &language_unsorted,
+        libraries_relnotes: &libraries_relnotes,
+        libraries_unsorted: &libraries_unsorted,
+        compiler_relnotes: &compiler_relnotes,
+        compiler_unsorted: &compiler_unsorted,
+        cargo_relnotes: &cargo_relnotes,
+        cargo_unsorted: &cargo_unsorted,
+        unsorted_relnotes: &unsorted_relnotes,
+        unsorted: &unsorted,
+        links: &links,
+        cargo_links: &cargo_links,
     };
 
     println!("{}", relnotes.render().unwrap());
@@ -108,17 +108,15 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str)
 {
     use std::env;
 
-    use reqwest::{
-        Client,
-        header::*,
-        mime,
-    };
+    use reqwest::{Client, header::*};
 
-    let mut headers = Headers::new();
-    headers.set(ContentType(mime::APPLICATION_JSON));
-    headers.set(Accept(vec![QualityItem::new(mime::APPLICATION_JSON, Quality::default())]));
-    headers.set(Authorization(Bearer { token: env::var("GITHUB_API_KEY").unwrap() }));
-    headers.set(UserAgent::new("Rsearcher/0.1.0"));
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+    headers.insert(ACCEPT, "application/json".parse().unwrap());
+    headers.insert(AUTHORIZATION,
+                   format!("Bearer {}", env::var("GITHUB_API_KEY").unwrap())
+                   .parse().unwrap());
+    headers.insert(USER_AGENT, "Rust-relnotes/0.1.0".parse().unwrap());
     let mut args = BTreeMap::new();
     args.insert("states", String::from("[MERGED]"));
     args.insert("last", String::from("100"));

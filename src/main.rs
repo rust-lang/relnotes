@@ -35,7 +35,8 @@ struct ReleaseNotes<'a> {
 fn main() {
     let mut args = env::args();
     let _ = args.next();
-    let version = args.next().unwrap();
+    let version = args.next().expect("A version number for the Rust release is \
+                                     required.");
     let today = Utc::now().date();
 
     // A known rust release date.

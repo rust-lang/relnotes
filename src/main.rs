@@ -14,7 +14,7 @@ use chrono::prelude::*;
 use chrono::Duration;
 
 #[derive(Clone, Template)]
-#[template(path = "relnotes.md")]
+#[template(path = "relnotes.md", escape = "none")]
 struct ReleaseNotes<'a> {
     version: &'a str,
     date: NaiveDate,
@@ -73,6 +73,7 @@ fn main() {
          unsorted) = partition_prs(rest);
 
     let cargo_issues = get_issues(start, end, "cargo");
+
     let (cargo_relnotes, cargo_unsorted) = {
         let (relnotes, rest) = partition_by_tag(cargo_issues.iter(), "relnotes");
 

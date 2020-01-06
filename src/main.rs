@@ -1,8 +1,8 @@
-extern crate reqwest;
+extern crate askama;
 extern crate chrono;
+extern crate reqwest;
 extern crate serde;
 extern crate serde_json as json;
-#[macro_use] extern crate askama;
 
 type JsonRefArray<'a> = Vec<&'a json::Value>;
 
@@ -35,8 +35,10 @@ struct ReleaseNotes<'a> {
 fn main() {
     let mut args = env::args();
     let _ = args.next();
-    let version = args.next().expect("A version number for the Rust release is \
-                                     required.");
+    let version = args.next().expect(
+        "A version number for the Rust release is \
+         required.",
+    );
     let today = Utc::now().date();
 
     // A known rust release date.
@@ -44,7 +46,9 @@ fn main() {
     let six_weeks = Duration::weeks(6);
 
     // Get the most recent rust release date.
-    while today - end > six_weeks { end = end + six_weeks; }
+    while today - end > six_weeks {
+        end = end + six_weeks;
+    }
 
     let start = end - six_weeks;
     let issues = get_issues(start, end, "rust");
@@ -52,25 +56,20 @@ fn main() {
     // Skips `beta-accepted` as those PRs were backported onto the
     // previous stable.
     let in_release = issues.iter().filter(|v| {
-        !v["labels"]["nodes"].as_array()
-                             .unwrap()
-                             .iter()
-                             .any(|o| o["name"] == "beta-accepted" ||
-                                      o["name"] == "T-doc")
+        !v["labels"]["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|o| o["name"] == "beta-accepted" || o["name"] == "T-doc")
     });
 
     let links = map_to_link_items("", in_release.clone());
     let (relnotes, rest) = partition_by_tag(in_release, "relnotes");
 
-    let (libraries_relnotes,
-         language_relnotes,
-         compiler_relnotes,
-         unsorted_relnotes) = partition_prs(relnotes);
+    let (libraries_relnotes, language_relnotes, compiler_relnotes, unsorted_relnotes) =
+        partition_prs(relnotes);
 
-    let (libraries_unsorted,
-         language_unsorted,
-         compiler_unsorted,
-         unsorted) = partition_prs(rest);
+    let (libraries_unsorted, language_unsorted, compiler_unsorted, unsorted) = partition_prs(rest);
 
     let cargo_issues = get_issues(start, end, "cargo");
 
@@ -79,7 +78,7 @@ fn main() {
 
         (
             map_to_line_items("cargo/", relnotes),
-            map_to_line_items("cargo/", rest)
+            map_to_line_items("cargo/", rest),
         )
     };
 
@@ -105,19 +104,19 @@ fn main() {
     println!("{}", relnotes.render().unwrap());
 }
 
-fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str)
-    -> Vec<json::Value>
-{
-    use std::env;
-
-    use reqwest::{Client, header::*};
+fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str) -> Vec<json::Value> {
+    use reqwest::blocking::Client;
+    use reqwest::header::*;
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
     headers.insert(ACCEPT, "application/json".parse().unwrap());
-    headers.insert(AUTHORIZATION,
-                   format!("Bearer {}", env::var("GITHUB_API_KEY").unwrap())
-                   .parse().unwrap());
+    headers.insert(
+        AUTHORIZATION,
+        format!("Bearer {}", env::var("GITHUB_API_KEY").unwrap())
+            .parse()
+            .unwrap(),
+    );
     headers.insert(USER_AGENT, "Rust-relnotes/0.1.0".parse().unwrap());
     let mut args = BTreeMap::new();
     args.insert("states", String::from("[MERGED]"));
@@ -126,7 +125,8 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str)
     let mut not_found_window = true;
 
     loop {
-        let query = format!("
+        let query = format!(
+            "
             query {{
                 repository(owner: \"rust-lang\", name: \"{repo_name}\") {{
                     pullRequests({args}) {{
@@ -148,24 +148,28 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str)
                 }}
             }}",
             repo_name = repo_name,
-            args = args.iter()
-                       .map(|(k, v)| format!("{}: {}", k, v))
-                       .collect::<Vec<_>>()
-                       .join(",")
-        ).replace(" ", "").replace("\n", " ").replace('"', "\\\"");
-
+            args = args
+                .iter()
+                .map(|(k, v)| format!("{}: {}", k, v))
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+        .replace(" ", "")
+        .replace("\n", " ")
+        .replace('"', "\\\"");
 
         let json_query = format!("{{\"query\": \"{}\"}}", query);
 
         let client = Client::new();
 
-        let mut response = client.post("https://api.github.com/graphql")
+        let json = client
+            .post("https://api.github.com/graphql")
             .headers(headers.clone())
             .body(json_query)
             .send()
+            .unwrap()
+            .json::<json::Value>()
             .unwrap();
-
-        let json: json::Value = response.json().unwrap();
 
         let pull_requests_data = json["data"]["repository"]["pullRequests"].clone();
 
@@ -188,47 +192,50 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str)
 
         args.insert(
             "before",
-            format!("\"{}\"",
-                pull_requests_data["pageInfo"]["startCursor"].clone()
+            format!(
+                "\"{}\"",
+                pull_requests_data["pageInfo"]["startCursor"]
+                    .clone()
                     .as_str()
                     .unwrap()
                     .to_owned()
-            )
+            ),
         );
 
         if pull_requests.len() != 0 {
             not_found_window = false;
             issues.append(&mut pull_requests);
         } else if not_found_window {
-            continue
+            continue;
         } else {
-            break issues
+            break issues;
         }
-
     }
 }
 
-fn map_to_line_items<'a>(prefix: &'static str,
-                         iter: impl IntoIterator<Item=&'a json::Value>)
-    -> String
-{
-    iter.into_iter().map(|o| {
-        format!(
-            "- [{title}][{prefix}{number}]",
-            prefix = prefix,
-            title = o["title"].as_str().unwrap(),
-            number = o["number"],
-        )
-    })
-    .collect::<Vec<_>>()
-    .join("\n")
+fn map_to_line_items<'a>(
+    prefix: &'static str,
+    iter: impl IntoIterator<Item = &'a json::Value>,
+) -> String {
+    iter.into_iter()
+        .map(|o| {
+            format!(
+                "- [{title}][{prefix}{number}]",
+                prefix = prefix,
+                title = o["title"].as_str().unwrap(),
+                number = o["number"],
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
-fn map_to_link_items<'a>(prefix: &'static str,
-                         iter: impl IntoIterator<Item=&'a json::Value>)
-    -> String
-{
-    iter.into_iter().map(|o| {
+fn map_to_link_items<'a>(
+    prefix: &'static str,
+    iter: impl IntoIterator<Item = &'a json::Value>,
+) -> String {
+    iter.into_iter()
+        .map(|o| {
             format!(
                 "[{prefix}{number}]: {url}/",
                 prefix = prefix,
@@ -236,25 +243,26 @@ fn map_to_link_items<'a>(prefix: &'static str,
                 url = o["url"].as_str().unwrap()
             )
         })
-    .collect::<Vec<_>>()
-    .join("\n")
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
-fn partition_by_tag<'a>(iter: impl IntoIterator<Item=&'a json::Value>,
-                        tag: &str)
-    -> (JsonRefArray<'a>, JsonRefArray<'a>)
-{
+fn partition_by_tag<'a>(
+    iter: impl IntoIterator<Item = &'a json::Value>,
+    tag: &str,
+) -> (JsonRefArray<'a>, JsonRefArray<'a>) {
     iter.into_iter().partition(|o| {
-        o["labels"]["nodes"].as_array()
-                            .unwrap()
-                            .iter()
-                            .any(|o| o["name"] == tag)
+        o["labels"]["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|o| o["name"] == tag)
     })
 }
 
-fn partition_prs<'a>(iter: impl IntoIterator<Item=&'a json::Value>)
-    -> (String, String, String, String)
-{
+fn partition_prs<'a>(
+    iter: impl IntoIterator<Item = &'a json::Value>,
+) -> (String, String, String, String) {
     let (libs, rest) = partition_by_tag(iter, "T-libs");
     let (lang, rest) = partition_by_tag(rest, "T-lang");
     let (compiler, rest) = partition_by_tag(rest, "T-compiler");
@@ -263,6 +271,6 @@ fn partition_prs<'a>(iter: impl IntoIterator<Item=&'a json::Value>)
         map_to_line_items("", libs),
         map_to_line_items("", lang),
         map_to_line_items("", compiler),
-        map_to_line_items("", rest)
-     )
+        map_to_line_items("", rest),
+    )
 }

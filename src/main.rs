@@ -1,11 +1,3 @@
-extern crate askama;
-extern crate chrono;
-extern crate reqwest;
-extern crate serde;
-extern crate serde_json as json;
-
-type JsonRefArray<'a> = Vec<&'a json::Value>;
-
 use std::collections::BTreeMap;
 use std::env;
 
@@ -13,36 +5,49 @@ use askama::Template;
 use chrono::prelude::*;
 use chrono::Duration;
 
+use serde_json as json;
+
+type JsonRefArray<'a> = Vec<&'a json::Value>;
+
+const SKIP_LABELS: &[&str] = &[
+    "beta-nominated",
+    "beta-accepted",
+    "stable-nominated",
+    "stable-accepted",
+    "rollup",
+];
+
 #[derive(Clone, Template)]
 #[template(path = "relnotes.md", escape = "none")]
-struct ReleaseNotes<'a> {
-    version: &'a str,
+struct ReleaseNotes {
+    cargo_links: String,
+    cargo_relnotes: String,
+    cargo_unsorted: String,
+    compat_relnotes: String,
+    compat_unsorted: String,
+    compiler_relnotes: String,
+    compiler_unsorted: String,
     date: NaiveDate,
-    language_relnotes: &'a str,
-    language_unsorted: &'a str,
-    libraries_relnotes: &'a str,
-    libraries_unsorted: &'a str,
-    compiler_relnotes: &'a str,
-    compiler_unsorted: &'a str,
-    cargo_relnotes: &'a str,
-    cargo_unsorted: &'a str,
-    unsorted_relnotes: &'a str,
-    unsorted: &'a str,
-    links: &'a str,
-    cargo_links: &'a str,
+    language_relnotes: String,
+    language_unsorted: String,
+    libraries_relnotes: String,
+    libraries_unsorted: String,
+    links: String,
+    unsorted: String,
+    unsorted_relnotes: String,
+    version: String,
 }
 
 fn main() {
     let mut args = env::args();
     let _ = args.next();
-    let version = args.next().expect(
-        "A version number for the Rust release is \
-         required.",
-    );
+    let version = args
+        .next()
+        .expect("A version number (xx.yy.zz) for the Rust release is required.");
     let today = Utc::now().date();
 
-    // A known rust release date.
-    let mut end = Utc.ymd(2017, 7, 20);
+    // A known rust release date. (1.42.0)
+    let mut end = Utc.ymd(2020, 3, 12);
     let six_weeks = Duration::weeks(6);
 
     // Get the most recent rust release date.
@@ -60,16 +65,22 @@ fn main() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|o| o["name"] == "beta-accepted" || o["name"] == "T-doc")
+            .any(|o| SKIP_LABELS.contains(&o["name"].as_str().unwrap()))
     });
 
     let links = map_to_link_items("", in_release.clone());
     let (relnotes, rest) = partition_by_tag(in_release, "relnotes");
 
-    let (libraries_relnotes, language_relnotes, compiler_relnotes, unsorted_relnotes) =
-        partition_prs(relnotes);
+    let (
+        compat_relnotes,
+        libraries_relnotes,
+        language_relnotes,
+        compiler_relnotes,
+        unsorted_relnotes,
+    ) = partition_prs(relnotes);
 
-    let (libraries_unsorted, language_unsorted, compiler_unsorted, unsorted) = partition_prs(rest);
+    let (compat_unsorted, libraries_unsorted, language_unsorted, compiler_unsorted, unsorted) =
+        partition_prs(rest);
 
     let cargo_issues = get_issues(start, end, "cargo");
 
@@ -85,20 +96,22 @@ fn main() {
     let cargo_links = map_to_link_items("cargo/", cargo_issues.iter());
 
     let relnotes = ReleaseNotes {
-        version: &version,
+        version,
         date: (end + six_weeks).naive_utc(),
-        language_relnotes: &language_relnotes,
-        language_unsorted: &language_unsorted,
-        libraries_relnotes: &libraries_relnotes,
-        libraries_unsorted: &libraries_unsorted,
-        compiler_relnotes: &compiler_relnotes,
-        compiler_unsorted: &compiler_unsorted,
-        cargo_relnotes: &cargo_relnotes,
-        cargo_unsorted: &cargo_unsorted,
-        unsorted_relnotes: &unsorted_relnotes,
-        unsorted: &unsorted,
-        links: &links,
-        cargo_links: &cargo_links,
+        compat_relnotes,
+        compat_unsorted,
+        language_relnotes,
+        language_unsorted,
+        libraries_relnotes,
+        libraries_unsorted,
+        compiler_relnotes,
+        compiler_unsorted,
+        cargo_relnotes,
+        cargo_unsorted,
+        unsorted_relnotes,
+        unsorted,
+        links,
+        cargo_links,
     };
 
     println!("{}", relnotes.render().unwrap());
@@ -113,7 +126,7 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str) -> Vec<
     headers.insert(ACCEPT, "application/json".parse().unwrap());
     headers.insert(
         AUTHORIZATION,
-        format!("Bearer {}", env::var("GITHUB_API_KEY").unwrap())
+        format!("Bearer {}", env::var("GITHUB_TOKEN").unwrap())
             .parse()
             .unwrap(),
     );
@@ -202,7 +215,7 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str) -> Vec<
             ),
         );
 
-        if pull_requests.len() != 0 {
+        if !pull_requests.is_empty() {
             not_found_window = false;
             issues.append(&mut pull_requests);
         } else if not_found_window {
@@ -262,12 +275,14 @@ fn partition_by_tag<'a>(
 
 fn partition_prs<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
-) -> (String, String, String, String) {
-    let (libs, rest) = partition_by_tag(iter, "T-libs");
+) -> (String, String, String, String, String) {
+    let (compat_notes, rest) = partition_by_tag(iter, "C-future-compatibility");
+    let (libs, rest) = partition_by_tag(rest, "T-libs");
     let (lang, rest) = partition_by_tag(rest, "T-lang");
     let (compiler, rest) = partition_by_tag(rest, "T-compiler");
 
     (
+        map_to_line_items("", compat_notes),
         map_to_line_items("", libs),
         map_to_line_items("", lang),
         map_to_line_items("", compiler),

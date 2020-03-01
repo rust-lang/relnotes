@@ -37,6 +37,10 @@ Misc
 
 Compatibility Notes
 -------------------
+**relnotes**
+{{compat_relnotes}}
+
+{{compat_unsorted}}
 
 UNSORTED
 --------

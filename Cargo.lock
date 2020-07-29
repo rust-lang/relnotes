@@ -7,20 +7,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "askama"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "askama_derive 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "askama_derive 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "askama_escape 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "askama_shared 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "askama_shared 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "askama_derive"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "askama_shared 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "askama_shared 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro2 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -33,7 +33,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "askama_shared"
-version = "0.10.3"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "askama_escape 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -629,7 +629,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "relnotes"
 version = "0.1.0"
 dependencies = [
- "askama 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "askama 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.10.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1052,10 +1052,10 @@ dependencies = [
 
 [metadata]
 "checksum anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)" = "7825f6833612eb2414095684fcf6c635becf3ce97fe48cf6421321e93bfbd53c"
-"checksum askama 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b7acc25b09d27eaec97794c58d8483a227f2adc98b762f915745525d8781dba0"
-"checksum askama_derive 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6f7dc4c28f064af8bbba24867ec6c3165c645635cb1306bca4c0f991ce8b15a9"
+"checksum askama 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "70a6e7ebd44d0047fd48206c83c5cd3214acc7b9d87f001da170145c47ef7d12"
+"checksum askama_derive 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e1d7169690c4f56343dcd821ab834972a22570a2662a19a84fd7775d5e1c3881"
 "checksum askama_escape 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "90c108c1a94380c89d2215d0ac54ce09796823cca0fd91b299cfff3b33e346fb"
-"checksum askama_shared 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "5b64d552e0dc2837d5c27276e80521cf864f42c079e476b3035a196566fcee59"
+"checksum askama_shared 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)" = "62fc272363345c8cdc030e4c259d9d028237f8b057dc9bb327772a257bde6bb5"
 "checksum autocfg 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 "checksum base64 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)" = "53d1ccbaf7d9ec9537465a97bf19edc1a4e158ecb49fc16178202238c569cc42"
 "checksum bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"

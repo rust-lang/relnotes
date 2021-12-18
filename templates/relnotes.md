@@ -6,6 +6,7 @@ Language
 **relnotes**
 {{language_relnotes}}
 
+**other**
 {{language_unsorted}}
 
 Compiler
@@ -13,6 +14,7 @@ Compiler
 **relnotes**
 {{compiler_relnotes}}
 
+**other**
 {{compiler_unsorted}}
 
 Libraries
@@ -20,6 +22,7 @@ Libraries
 **relnotes**
 {{libraries_relnotes}}
 
+**other**
 {{libraries_unsorted}}
 
 Stabilized APIs
@@ -30,6 +33,7 @@ Cargo
 **relnotes**
 {{cargo_relnotes}}
 
+**other**
 {{cargo_unsorted}}
 
 Misc
@@ -40,6 +44,7 @@ Compatibility Notes
 **relnotes**
 {{compat_relnotes}}
 
+**other**
 {{compat_unsorted}}
 
 UNSORTED
@@ -47,6 +52,7 @@ UNSORTED
 **relnotes**
 {{unsorted_relnotes}}
 
+**other**
 {{unsorted}}
 
 {{links}}

@@ -68,8 +68,10 @@ fn main() {
             .any(|o| SKIP_LABELS.contains(&o["name"].as_str().unwrap()))
     });
 
+    let relnotes_tags = &["relnotes", "finished-final-comment-period"];
+
     let links = map_to_link_items("", in_release.clone());
-    let (relnotes, rest) = partition_by_tag(in_release, "relnotes");
+    let (relnotes, rest) = partition_by_tag(in_release, relnotes_tags);
 
     let (
         compat_relnotes,
@@ -85,7 +87,7 @@ fn main() {
     let cargo_issues = get_issues(start, end, "cargo");
 
     let (cargo_relnotes, cargo_unsorted) = {
-        let (relnotes, rest) = partition_by_tag(cargo_issues.iter(), "relnotes");
+        let (relnotes, rest) = partition_by_tag(cargo_issues.iter(), relnotes_tags);
 
         (
             map_to_line_items("cargo/", relnotes),
@@ -121,12 +123,13 @@ fn get_issues(start: Date<Utc>, end: Date<Utc>, repo_name: &'static str) -> Vec<
     use reqwest::blocking::Client;
     use reqwest::header::*;
 
+    let token = env::var("GITHUB_TOKEN").expect("Set GITHUB_TOKEN to a valid token");
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
     headers.insert(ACCEPT, "application/json".parse().unwrap());
     headers.insert(
         AUTHORIZATION,
-        format!("Bearer {}", env::var("GITHUB_TOKEN").unwrap())
+        format!("Bearer {}", token)
             .parse()
             .unwrap(),
     );
@@ -262,24 +265,24 @@ fn map_to_link_items<'a>(
 
 fn partition_by_tag<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
-    tag: &str,
+    tags: &[&str],
 ) -> (JsonRefArray<'a>, JsonRefArray<'a>) {
     iter.into_iter().partition(|o| {
         o["labels"]["nodes"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|o| o["name"] == tag)
+            .any(|o| tags.iter().any(|tag| o["name"] == *tag))
     })
 }
 
 fn partition_prs<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
 ) -> (String, String, String, String, String) {
-    let (compat_notes, rest) = partition_by_tag(iter, "C-future-compatibility");
-    let (libs, rest) = partition_by_tag(rest, "T-libs");
-    let (lang, rest) = partition_by_tag(rest, "T-lang");
-    let (compiler, rest) = partition_by_tag(rest, "T-compiler");
+    let (compat_notes, rest) = partition_by_tag(iter, &["C-future-compatibility"]);
+    let (libs, rest) = partition_by_tag(rest, &["T-libs"]);
+    let (lang, rest) = partition_by_tag(rest, &["T-lang"]);
+    let (compiler, rest) = partition_by_tag(rest, &["T-compiler"]);
 
     (
         map_to_line_items("", compat_notes),

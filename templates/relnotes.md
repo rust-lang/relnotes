@@ -47,6 +47,13 @@ Compatibility Notes
 **other**
 {{compat_unsorted}}
 
+Internal Changes
+----------------
+
+These changes provide no direct user facing benefits, but represent significant
+improvements to the internals and overall performance of rustc
+and related tools.
+
 UNSORTED
 --------
 **relnotes**

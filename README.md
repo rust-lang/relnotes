@@ -6,7 +6,7 @@ sections where possible, and prints the document to `stdout`.
 
 ## Requirements
 `relnotes` uses the GitHub API to generate the release notes, as such you need
-a valid GitHub API key. `relnotes` will look for `GITHUB_API_KEY` in the
+a valid GitHub API key. `relnotes` will look for `GITHUB_TOKEN` in the
 environment and use that key when sending requests.
 
 **small warning:** `relnotes` makes a lot of requests as GitHub only allows you to

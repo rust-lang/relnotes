@@ -57,7 +57,8 @@ fn main() {
     }
     let start = end - six_weeks;
 
-    let issues = get_issues_by_milestone(&version, "rust");
+    let mut issues = get_issues_by_milestone(&version, "rust");
+    issues.sort_by_cached_key(|issue| issue["number"].as_u64().unwrap());
 
     // Skips `beta-accepted` as those PRs were backported onto the
     // previous stable.
@@ -85,7 +86,8 @@ fn main() {
     let (compat_unsorted, libraries_unsorted, language_unsorted, compiler_unsorted, unsorted) =
         partition_prs(rest);
 
-    let cargo_issues = get_issues_by_date(start, end, "cargo");
+    let mut cargo_issues = get_issues_by_date(start, end, "cargo");
+    cargo_issues.sort_by_cached_key(|issue| issue["number"].as_u64().unwrap());
 
     let (cargo_relnotes, cargo_unsorted) = {
         let (relnotes, rest) = partition_by_tag(cargo_issues.iter(), relnotes_tags);

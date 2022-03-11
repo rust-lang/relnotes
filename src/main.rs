@@ -55,7 +55,6 @@ fn main() {
     while today - end > six_weeks {
         end = end + six_weeks;
     }
-    let start = end - six_weeks;
 
     let mut issues = get_issues_by_milestone(&version, "rust");
     issues.sort_by_cached_key(|issue| issue["number"].as_u64().unwrap());
@@ -86,7 +85,7 @@ fn main() {
     let (compat_unsorted, libraries_unsorted, language_unsorted, compiler_unsorted, unsorted) =
         partition_prs(rest);
 
-    let mut cargo_issues = get_issues_by_date(start, end, "cargo");
+    let mut cargo_issues = get_issues_by_milestone(&version, "cargo");
     cargo_issues.sort_by_cached_key(|issue| issue["number"].as_u64().unwrap());
 
     let (cargo_relnotes, cargo_unsorted) = {
@@ -203,109 +202,6 @@ fn get_issues_by_milestone(version: &str, repo_name: &'static str) -> Vec<json::
                 break issues;
             }
             _ => unreachable!(),
-        }
-    }
-}
-
-fn get_issues_by_date(
-    start: Date<Utc>,
-    end: Date<Utc>,
-    repo_name: &'static str,
-) -> Vec<json::Value> {
-    use reqwest::blocking::Client;
-
-    let headers = request_header();
-    let mut args = BTreeMap::new();
-    args.insert("states", String::from("[MERGED]"));
-    args.insert("last", String::from("100"));
-    let mut issues = Vec::new();
-    let mut not_found_window = true;
-
-    loop {
-        let query = format!(
-            r#"
-            query {{
-                repository(owner: "rust-lang", name: "{repo_name}") {{
-                    pullRequests({args}) {{
-                        nodes {{
-                            mergedAt
-                            number
-                            title
-                            url
-                            labels(last: 100) {{
-                                nodes {{
-                                    name
-                                }}
-                            }}
-                        }}
-                        pageInfo {{
-                            startCursor
-                        }}
-                    }}
-                }}
-            }}"#,
-            repo_name = repo_name,
-            args = args
-                .iter()
-                .map(|(k, v)| format!("{}: {}", k, v))
-                .collect::<Vec<_>>()
-                .join(",")
-        )
-        .replace(" ", "")
-        .replace("\n", " ")
-        .replace('"', "\\\"");
-
-        let json_query = format!("{{\"query\": \"{}\"}}", query);
-
-        let client = Client::new();
-
-        let json = client
-            .post("https://api.github.com/graphql")
-            .headers(headers.clone())
-            .body(json_query)
-            .send()
-            .unwrap()
-            .json::<json::Value>()
-            .unwrap();
-
-        let pull_requests_data = json["data"]["repository"]["pullRequests"].clone();
-
-        let mut pull_requests = pull_requests_data["nodes"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter(|o| {
-                let merge_date: chrono::Date<_> = o["mergedAt"]
-                    .as_str()
-                    .unwrap()
-                    .parse::<DateTime<_>>()
-                    .unwrap()
-                    .date();
-
-                (merge_date < end) && (merge_date > start)
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        args.insert(
-            "before",
-            format!(
-                "\"{}\"",
-                pull_requests_data["pageInfo"]["startCursor"]
-                    .clone()
-                    .as_str()
-                    .unwrap()
-                    .to_owned()
-            ),
-        );
-
-        if !pull_requests.is_empty() {
-            not_found_window = false;
-            issues.append(&mut pull_requests);
-        } else if not_found_window {
-            continue;
-        } else {
-            break issues;
         }
     }
 }

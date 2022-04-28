@@ -69,7 +69,7 @@ fn main() {
             .any(|o| SKIP_LABELS.contains(&o["name"].as_str().unwrap()))
     });
 
-    let relnotes_tags = &["relnotes", "finished-final-comment-period"];
+    let relnotes_tags = &["relnotes", "finished-final-comment-period", "needs-fcp"];
 
     let links = map_to_link_items("", in_release.clone());
     let (relnotes, rest) = partition_by_tag(in_release, relnotes_tags);

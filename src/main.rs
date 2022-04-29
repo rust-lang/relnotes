@@ -69,7 +69,7 @@ fn main() {
             .any(|o| SKIP_LABELS.contains(&o["name"].as_str().unwrap()))
     });
 
-    let relnotes_tags = &["relnotes", "finished-final-comment-period"];
+    let relnotes_tags = &["relnotes", "finished-final-comment-period", "needs-fcp"];
 
     let links = map_to_link_items("", in_release.clone());
     let (relnotes, rest) = partition_by_tag(in_release, relnotes_tags);
@@ -268,7 +268,7 @@ fn partition_prs<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
 ) -> (String, String, String, String, String) {
     let (compat_notes, rest) = partition_by_tag(iter, &["C-future-compatibility"]);
-    let (libs, rest) = partition_by_tag(rest, &["T-libs"]);
+    let (libs, rest) = partition_by_tag(rest, &["T-libs", "T-libs-api"]);
     let (lang, rest) = partition_by_tag(rest, &["T-lang"]);
     let (compiler, rest) = partition_by_tag(rest, &["T-compiler"]);
 

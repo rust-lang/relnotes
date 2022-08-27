@@ -50,9 +50,9 @@ Compatibility Notes
 Internal Changes
 ----------------
 
-These changes provide no direct user facing benefits, but represent significant
-improvements to the internals and overall performance of rustc
-and related tools.
+These changes do not affect any public interfaces of Rust, but they represent
+significant improvements to the performance or internals of rustc and related
+tools.
 
 UNSORTED
 --------

@@ -21,7 +21,6 @@ const SKIP_LABELS: &[&str] = &[
 #[derive(Clone, Template)]
 #[template(path = "relnotes.md", escape = "none")]
 struct ReleaseNotes {
-    cargo_links: String,
     cargo_relnotes: String,
     cargo_unsorted: String,
     compat_relnotes: String,
@@ -33,7 +32,6 @@ struct ReleaseNotes {
     language_unsorted: String,
     libraries_relnotes: String,
     libraries_unsorted: String,
-    links: String,
     unsorted: String,
     unsorted_relnotes: String,
     version: String,
@@ -71,7 +69,6 @@ fn main() {
 
     let relnotes_tags = &["relnotes", "finished-final-comment-period", "needs-fcp"];
 
-    let links = map_to_link_items("", in_release.clone());
     let (relnotes, rest) = partition_by_tag(in_release, relnotes_tags);
 
     let (
@@ -91,13 +88,8 @@ fn main() {
     let (cargo_relnotes, cargo_unsorted) = {
         let (relnotes, rest) = partition_by_tag(cargo_issues.iter(), relnotes_tags);
 
-        (
-            map_to_line_items("cargo/", relnotes),
-            map_to_line_items("cargo/", rest),
-        )
+        (map_to_line_items(relnotes), map_to_line_items(rest))
     };
-
-    let cargo_links = map_to_link_items("cargo/", cargo_issues.iter());
 
     let relnotes = ReleaseNotes {
         version,
@@ -114,8 +106,6 @@ fn main() {
         cargo_unsorted,
         unsorted_relnotes,
         unsorted,
-        links,
-        cargo_links,
     };
 
     println!("{}", relnotes.render().unwrap());
@@ -217,34 +207,13 @@ fn request_header() -> HeaderMap {
     headers
 }
 
-fn map_to_line_items<'a>(
-    prefix: &'static str,
-    iter: impl IntoIterator<Item = &'a json::Value>,
-) -> String {
+fn map_to_line_items<'a>(iter: impl IntoIterator<Item = &'a json::Value>) -> String {
     iter.into_iter()
         .map(|o| {
             format!(
-                "- [{title}][{prefix}{number}]",
-                prefix = prefix,
+                "- [{title}]({url}/)",
                 title = o["title"].as_str().unwrap(),
-                number = o["number"],
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn map_to_link_items<'a>(
-    prefix: &'static str,
-    iter: impl IntoIterator<Item = &'a json::Value>,
-) -> String {
-    iter.into_iter()
-        .map(|o| {
-            format!(
-                "[{prefix}{number}]: {url}/",
-                prefix = prefix,
-                number = o["number"],
-                url = o["url"].as_str().unwrap()
+                url = o["url"].as_str().unwrap(),
             )
         })
         .collect::<Vec<_>>()
@@ -273,10 +242,10 @@ fn partition_prs<'a>(
     let (compiler, rest) = partition_by_tag(rest, &["T-compiler"]);
 
     (
-        map_to_line_items("", compat_notes),
-        map_to_line_items("", libs),
-        map_to_line_items("", lang),
-        map_to_line_items("", compiler),
-        map_to_line_items("", rest),
+        map_to_line_items(compat_notes),
+        map_to_line_items(libs),
+        map_to_line_items(lang),
+        map_to_line_items(compiler),
+        map_to_line_items(rest),
     )
 }

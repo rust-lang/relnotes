@@ -1,6 +1,8 @@
 Version {{version}} ({{date}})
 ==========================
 
+<a id="{{version}}-Language"></a>
+
 Language
 --------
 **relnotes**
@@ -8,6 +10,8 @@ Language
 
 **other**
 {{language_unsorted}}
+
+<a id="{{version}}-Compiler"></a>
 
 Compiler
 --------
@@ -17,6 +21,8 @@ Compiler
 **other**
 {{compiler_unsorted}}
 
+<a id="{{version}}-Libraries"></a>
+
 Libraries
 ---------
 **relnotes**
@@ -25,8 +31,12 @@ Libraries
 **other**
 {{libraries_unsorted}}
 
+<a id="{{version}}-Stabilized-APIs"></a>
+
 Stabilized APIs
 ---------------
+
+<a id="{{version}}-Cargo"></a>
 
 Cargo
 -----
@@ -36,8 +46,12 @@ Cargo
 **other**
 {{cargo_unsorted}}
 
+<a id="{{version}}-Misc"></a>
+
 Misc
 ----
+
+<a id="{{version}}-Compatibility-Notes"></a>
 
 Compatibility Notes
 -------------------
@@ -46,6 +60,8 @@ Compatibility Notes
 
 **other**
 {{compat_unsorted}}
+
+<a id="{{version}}-Internal-Changes"></a>
 
 Internal Changes
 ----------------

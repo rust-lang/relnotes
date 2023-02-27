@@ -163,14 +163,19 @@ fn get_issues_by_milestone(version: &str, repo_name: &'static str) -> Vec<json::
 
         let client = Client::new();
 
-        let json = client
+        let response = client
             .post("https://api.github.com/graphql")
             .headers(headers.clone())
             .body(json_query)
             .send()
-            .unwrap()
+            .unwrap();
+        let status = response.status();
+        let json = response
             .json::<json::Value>()
             .unwrap();
+        if !status.is_success() {
+            panic!("API Error {}: {}", status, json);
+        }
 
         let milestones_data = json["data"]["repository"]["milestones"].clone();
         assert_eq!(

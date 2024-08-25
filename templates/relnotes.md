@@ -70,6 +70,12 @@ These changes do not affect any public interfaces of Rust, but they represent
 significant improvements to the performance or internals of rustc and related
 tools.
 
+**relnotes**
+{{internal_changes_relnotes}}
+
+**other**
+{{internal_changes_unsorted}}
+
 UNSORTED
 --------
 **relnotes**

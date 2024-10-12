@@ -9,13 +9,7 @@ use chrono::Duration;
 use reqwest::header::HeaderMap;
 use serde_json as json;
 
-const SKIP_LABELS: &[&str] = &[
-    "beta-nominated",
-    "beta-accepted",
-    "stable-nominated",
-    "stable-accepted",
-    "rollup",
-];
+const SKIP_LABELS: &[&str] = &["rollup"];
 
 const RELNOTES_LABELS: &[&str] = &[
     "relnotes",
@@ -65,8 +59,7 @@ fn main() {
     let issues = get_issues_by_milestone(&version, "rust");
     let mut tracking_rust = TrackingIssues::collect(&issues);
 
-    // Skips `beta-accepted` as those PRs were backported onto the
-    // previous stable.
+    // Skips some PRs that aren't themselves interesting.
     let in_release = issues.iter().filter(|v| {
         !v["labels"]["nodes"]
             .as_array()
@@ -131,6 +124,22 @@ fn main() {
 
     for issue in tracking_rust.issues.values() {
         for (section, (used, _)) in issue.sections.iter() {
+            if issue.raw["labels"]["nodes"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|l| l["name"] == "relnotes-tracking-issue")
+                && issue.raw["state"] == "CLOSED"
+            {
+                assert!(
+                    !*used,
+                    "{} <{}> used despite tracking issue being closed",
+                    issue.raw["title"].as_str().unwrap(),
+                    issue.raw["url"].as_str().unwrap()
+                );
+                continue;
+            }
+
             if *used {
                 continue;
             }
@@ -207,6 +216,7 @@ fn get_issues_by_milestone_inner(
                                     title
                                     url
                                     body
+                                    state
                                     labels(last: 100) {{
                                         nodes {{
                                             name
@@ -362,6 +372,11 @@ fn map_to_line_items<'a>(
         let number = o["number"].as_u64().unwrap();
 
         if let Some(issue) = tracking_issues.issues.get_mut(&number) {
+            // If the tracking issue is closed, skip.
+            if issue.raw["state"] == "CLOSED" {
+                continue;
+            }
+
             for (section, (used, lines)) in issue.sections.iter_mut() {
                 if let Some(contents) = by_section.get_mut(section.as_str()) {
                     *used = true;

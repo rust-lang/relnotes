@@ -311,20 +311,26 @@ struct TrackingIssue {
 
 impl TrackingIssues {
     fn collect(all: &[json::Value]) -> Self {
-        let prefix = "Tracking issue for release notes of #";
+        const PREFIX: &str = "Tracking issue for release notes of #";
+        const MARKDOWN: &str = r"(?ms)^(`{3,})markdown\r?\n(.*?)^\1\r?\n";
+
+        let markdown_re = fancy_regex::Regex::new(MARKDOWN).unwrap();
         let mut tracking_issues = HashMap::new();
         for o in all.iter() {
             let title = o["title"].as_str().unwrap();
-            if let Some(tail) = title.strip_prefix(prefix) {
+            if let Some(tail) = title.strip_prefix(PREFIX) {
                 let for_number = tail[..tail.find(':').unwrap()].parse::<u64>().unwrap();
                 let mut sections = HashMap::new();
                 let body = o["body"].as_str().unwrap();
-                let relnotes = body
-                    .split("```")
-                    .nth(1)
-                    .unwrap()
-                    .strip_prefix("markdown")
-                    .unwrap();
+
+                let Ok(Some(captures)) = markdown_re.captures(body) else {
+                    let issue = &o["number"];
+                    eprintln!("WARNING: skipping {issue}, markdown not found:");
+                    eprintln!("  {body:?}");
+                    continue;
+                };
+                let relnotes = &captures[2];
+
                 let mut in_section = None;
                 for line in relnotes.lines() {
                     if line.trim().is_empty() {

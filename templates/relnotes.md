@@ -24,11 +24,23 @@ Libraries
 Stabilized APIs
 ---------------
 
+{{stabilized_apis_relnotes}}
+
+These APIs are now stable in const contexts:
+
+{{const_stabilized_apis_relnotes}}
+
 <a id="{{version}}-Cargo"></a>
 
 Cargo
 -----
 {{cargo_relnotes}}
+
+<a id="{{version}}-Rustdoc"></a>
+
+Rustdoc
+-----
+{{rustdoc_relnotes}}
 
 <a id="{{version}}-Compatibility-Notes"></a>
 
@@ -46,3 +58,9 @@ significant improvements to the performance or internals of rustc and related
 tools.
 
 {{internal_changes_relnotes}}
+
+
+Other
+-----
+
+{{other_relnotes}}

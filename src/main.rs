@@ -21,22 +21,19 @@ const RELNOTES_LABELS: &[&str] = &[
 #[derive(Clone, Template)]
 #[template(path = "relnotes.md", escape = "none")]
 struct ReleaseNotes {
-    cargo_relnotes: String,
-    cargo_unsorted: String,
-    compat_relnotes: String,
-    compat_unsorted: String,
-    compiler_relnotes: String,
-    compiler_unsorted: String,
-    date: NaiveDate,
-    language_relnotes: String,
-    language_unsorted: String,
-    libraries_relnotes: String,
-    libraries_unsorted: String,
-    unsorted: String,
-    unsorted_relnotes: String,
     version: String,
+    date: NaiveDate,
+
+    language_relnotes: String,
+    compiler_relnotes: String,
+    libraries_relnotes: String,
+    stabilized_apis_relnotes: String,
+    const_stabilized_apis_relnotes: String,
+    cargo_relnotes: String,
+    rustdoc_relnotes: String,
+    compat_relnotes: String,
     internal_changes_relnotes: String,
-    internal_changes_unsorted: String,
+    other_relnotes: String,
 }
 
 fn main() {
@@ -68,58 +65,42 @@ fn main() {
             .any(|o| SKIP_LABELS.contains(&o["name"].as_str().unwrap()))
     });
 
-    let (relnotes, rest) = in_release
+    let relnotes = in_release
         .into_iter()
-        .partition::<Vec<_>, _>(|o| has_tags(o, RELNOTES_LABELS));
+        .filter(|o| has_tags(o, RELNOTES_LABELS))
+        .collect::<Vec<_>>();
 
-    let (
-        compat_relnotes,
-        libraries_relnotes,
+    let Sections {
         language_relnotes,
         compiler_relnotes,
+        libraries_relnotes,
+        stabilized_apis_relnotes,
+        const_stabilized_apis_relnotes,
+        rustdoc_relnotes,
+        compat_relnotes,
         internal_changes_relnotes,
-        unsorted_relnotes,
-    ) = to_sections(relnotes, &mut tracking_rust);
-
-    let (
-        compat_unsorted,
-        libraries_unsorted,
-        language_unsorted,
-        compiler_unsorted,
-        internal_changes_unsorted,
-        unsorted,
-    ) = to_sections(rest, &mut tracking_rust);
+        other_relnotes,
+    } = to_sections(relnotes, &mut tracking_rust);
 
     let cargo_issues = get_issues_by_milestone(&version, "cargo");
 
-    let (cargo_relnotes, cargo_unsorted) = {
-        let (relnotes, rest) = cargo_issues
+    let cargo_relnotes = {
+        let relnotes = cargo_issues
             .iter()
-            .partition::<Vec<_>, _>(|o| has_tags(o, RELNOTES_LABELS));
+            .filter(|o| has_tags(o, RELNOTES_LABELS))
+            .collect::<Vec<_>>();
 
-        (
-            relnotes
-                .iter()
-                .map(|o| {
-                    format!(
-                        "- [{title}]({url}/)",
-                        title = o["title"].as_str().unwrap(),
-                        url = o["url"].as_str().unwrap(),
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join("\n"),
-            rest.iter()
-                .map(|o| {
-                    format!(
-                        "- [{title}]({url}/)",
-                        title = o["title"].as_str().unwrap(),
-                        url = o["url"].as_str().unwrap(),
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join("\n"),
-        )
+        relnotes
+            .iter()
+            .map(|o| {
+                format!(
+                    "- [{title}]({url}/)",
+                    title = o["title"].as_str().unwrap(),
+                    url = o["url"].as_str().unwrap(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     };
 
     for issue in tracking_rust.issues.values() {
@@ -156,20 +137,17 @@ fn main() {
     let relnotes = ReleaseNotes {
         version,
         date: (end + six_weeks).naive_utc(),
-        compat_relnotes,
-        compat_unsorted,
+
         language_relnotes,
-        language_unsorted,
-        libraries_relnotes,
-        libraries_unsorted,
         compiler_relnotes,
-        compiler_unsorted,
+        libraries_relnotes,
+        rustdoc_relnotes,
+        stabilized_apis_relnotes,
+        const_stabilized_apis_relnotes,
         cargo_relnotes,
-        cargo_unsorted,
         internal_changes_relnotes,
-        internal_changes_unsorted,
-        unsorted_relnotes,
-        unsorted,
+        compat_relnotes,
+        other_relnotes,
     };
 
     println!("{}", relnotes.render().unwrap());
@@ -428,24 +406,44 @@ fn has_tags<'a>(o: &'a json::Value, tags: &[&str]) -> bool {
         .any(|o| tags.iter().any(|tag| o["name"] == *tag))
 }
 
+struct Sections {
+    language_relnotes: String,
+    compiler_relnotes: String,
+    libraries_relnotes: String,
+    stabilized_apis_relnotes: String,
+    const_stabilized_apis_relnotes: String,
+    rustdoc_relnotes: String,
+    compat_relnotes: String,
+    internal_changes_relnotes: String,
+    other_relnotes: String,
+}
+
 fn to_sections<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
     mut tracking: &mut TrackingIssues,
-) -> (String, String, String, String, String, String) {
+) -> Sections {
     let mut by_section = HashMap::new();
-    by_section.insert("Compatibility Notes", String::new());
-    by_section.insert("Library", String::new());
     by_section.insert("Language", String::new());
     by_section.insert("Compiler", String::new());
+    by_section.insert("Libraries", String::new());
+    by_section.insert("Stabilized APIs", String::new());
+    by_section.insert("Const Stabilized APIs", String::new());
+    by_section.insert("Rustdoc", String::new());
+    by_section.insert("Compatibility Notes", String::new());
     by_section.insert("Internal Changes", String::new());
     by_section.insert("Other", String::new());
+
     map_to_line_items(iter, &mut tracking, &mut by_section);
-    (
-        by_section.remove("Compatibility Notes").unwrap(),
-        by_section.remove("Library").unwrap(),
-        by_section.remove("Language").unwrap(),
-        by_section.remove("Compiler").unwrap(),
-        by_section.remove("Internal Changes").unwrap(),
-        by_section.remove("Other").unwrap(),
-    )
+
+    Sections {
+        language_relnotes: by_section.remove("Language").unwrap(),
+        compiler_relnotes: by_section.remove("Compiler").unwrap(),
+        libraries_relnotes: by_section.remove("Libraries").unwrap(),
+        stabilized_apis_relnotes: by_section.remove("Stabilized APIs").unwrap(),
+        const_stabilized_apis_relnotes: by_section.remove("Const Stabilized APIs").unwrap(),
+        rustdoc_relnotes: by_section.remove("Rustdoc").unwrap(),
+        compat_relnotes: by_section.remove("Compatibility Notes").unwrap(),
+        internal_changes_relnotes: by_section.remove("Internal Changes").unwrap(),
+        other_relnotes: by_section.remove("Other").unwrap(),
+    }
 }

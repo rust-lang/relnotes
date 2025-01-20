@@ -42,10 +42,14 @@ fn main() {
     let version = args
         .next()
         .expect("A version number (xx.yy.zz) for the Rust release is required.");
-    let today = Utc::now().date();
+    let today = Utc::now().date_naive();
 
     // A known rust release date. (1.42.0)
-    let mut end = Utc.ymd(2020, 3, 12);
+    let mut end = Utc
+        .with_ymd_and_hms(2020, 3, 12, 0, 0, 0)
+        .single()
+        .unwrap()
+        .date_naive();
     let six_weeks = Duration::weeks(6);
 
     // Get the most recent rust release date.
@@ -126,17 +130,20 @@ fn main() {
             }
 
             eprintln!(
-                "Did not use {:?} from {} <{}>",
+                "Did not use {:?} from {} <{}> (intended to provide relnotes for: {:?})",
                 section,
                 issue.raw["title"].as_str().unwrap(),
-                issue.raw["url"].as_str().unwrap()
+                issue.raw["url"].as_str().unwrap(),
+                issues
+                    .iter()
+                    .find(|i| i["number"].as_u64().unwrap() == issue.for_number)
             );
         }
     }
 
     let relnotes = ReleaseNotes {
         version,
-        date: (end + six_weeks).naive_utc(),
+        date: end + six_weeks,
 
         language_relnotes,
         compiler_relnotes,
@@ -282,6 +289,7 @@ struct TrackingIssues {
 
 #[derive(Debug)]
 struct TrackingIssue {
+    for_number: u64,
     raw: json::Value,
     // Section name -> (used, lines)
     sections: HashMap<String, (bool, Vec<String>)>,
@@ -331,6 +339,7 @@ impl TrackingIssues {
                 tracking_issues.insert(
                     for_number,
                     TrackingIssue {
+                        for_number,
                         raw: o.clone(),
                         sections,
                     },
@@ -362,7 +371,10 @@ fn map_to_line_items<'a>(
             }
 
             for (section, (used, lines)) in issue.sections.iter_mut() {
-                if let Some(contents) = by_section.get_mut(section.as_str()) {
+                if let Some((_, contents)) = by_section
+                    .iter_mut()
+                    .find(|(s, _)| s.eq_ignore_ascii_case(section))
+                {
                     *used = true;
                     for line in lines.iter() {
                         contents.push_str(line);

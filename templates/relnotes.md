@@ -13,6 +13,15 @@ Compiler
 --------
 {{compiler_relnotes}}
 
+<a id="{{version}}-Platform-Support"></a>
+
+Platform Support
+----------------
+{{platform_relnotes}}
+
+Refer to Rust's [platform support page][platform-support-doc]
+for more information on Rust's tiered platform support.
+
 <a id="{{version}}-Libraries"></a>
 
 Libraries

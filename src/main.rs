@@ -26,6 +26,7 @@ struct ReleaseNotes {
 
     language_relnotes: String,
     compiler_relnotes: String,
+    platform_relnotes: String,
     libraries_relnotes: String,
     stabilized_apis_relnotes: String,
     const_stabilized_apis_relnotes: String,
@@ -77,6 +78,7 @@ fn main() {
     let Sections {
         language_relnotes,
         compiler_relnotes,
+        platform_relnotes,
         libraries_relnotes,
         stabilized_apis_relnotes,
         const_stabilized_apis_relnotes,
@@ -130,13 +132,11 @@ fn main() {
             }
 
             eprintln!(
-                "Did not use {:?} from {} <{}> (intended to provide relnotes for: {:?})",
+                "Did not use {:?} from {} <{}> (parsed as providing for #{}, check if that is milestoned correctly)",
                 section,
                 issue.raw["title"].as_str().unwrap(),
                 issue.raw["url"].as_str().unwrap(),
-                issues
-                    .iter()
-                    .find(|i| i["number"].as_u64().unwrap() == issue.for_number)
+                issue.for_number,
             );
         }
     }
@@ -147,6 +147,7 @@ fn main() {
 
         language_relnotes,
         compiler_relnotes,
+        platform_relnotes,
         libraries_relnotes,
         rustdoc_relnotes,
         stabilized_apis_relnotes,
@@ -421,6 +422,7 @@ fn has_tags<'a>(o: &'a json::Value, tags: &[&str]) -> bool {
 struct Sections {
     language_relnotes: String,
     compiler_relnotes: String,
+    platform_relnotes: String,
     libraries_relnotes: String,
     stabilized_apis_relnotes: String,
     const_stabilized_apis_relnotes: String,
@@ -443,6 +445,7 @@ fn to_sections<'a>(
     by_section.insert("Rustdoc", String::new());
     by_section.insert("Compatibility Notes", String::new());
     by_section.insert("Internal Changes", String::new());
+    by_section.insert("Platform Support", String::new());
     by_section.insert("Other", String::new());
 
     map_to_line_items(iter, &mut tracking, &mut by_section);
@@ -450,6 +453,7 @@ fn to_sections<'a>(
     Sections {
         language_relnotes: by_section.remove("Language").unwrap(),
         compiler_relnotes: by_section.remove("Compiler").unwrap(),
+        platform_relnotes: by_section.remove("Platform Support").unwrap(),
         libraries_relnotes: by_section.remove("Libraries").unwrap(),
         stabilized_apis_relnotes: by_section.remove("Stabilized APIs").unwrap(),
         const_stabilized_apis_relnotes: by_section.remove("Const Stabilized APIs").unwrap(),

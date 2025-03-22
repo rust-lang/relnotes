@@ -22,6 +22,8 @@ Platform Support
 Refer to Rust's [platform support page][platform-support-doc]
 for more information on Rust's tiered platform support.
 
+[platform-support-doc]: https://doc.rust-lang.org/rustc/platform-support.html
+
 <a id="{{version}}-Libraries"></a>
 
 Libraries

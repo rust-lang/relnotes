@@ -38,11 +38,17 @@ struct ReleaseNotes {
 }
 
 fn main() {
-    let mut args = env::args();
-    let _ = args.next();
-    let version = args
-        .next()
-        .expect("A version number (xx.yy.zz) for the Rust release is required.");
+    let mut draft = false;
+    let mut opt_version = None;
+    for arg in env::args().skip(1) {
+        match arg.as_bytes() {
+            b"--draft" => draft = true,
+            [b'1', b'.', ..] => opt_version = Some(arg),
+            _ => panic!("unrecognized argument: {arg:?}"),
+        }
+    }
+    let version =
+        opt_version.expect("A version number (xx.yy.zz) for the Rust release is required.");
     let today = Utc::now().date_naive();
 
     // A known rust release date. (1.42.0)
@@ -86,7 +92,7 @@ fn main() {
         compat_relnotes,
         internal_changes_relnotes,
         other_relnotes,
-    } = to_sections(relnotes, &mut tracking_rust);
+    } = to_sections(relnotes, &mut tracking_rust, draft);
 
     let cargo_issues = get_issues_by_milestone(&version, "cargo");
 
@@ -357,6 +363,7 @@ fn map_to_line_items<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
     tracking_issues: &mut TrackingIssues,
     by_section: &mut HashMap<&'static str, String>,
+    draft: bool,
 ) {
     for o in iter {
         let title = o["title"].as_str().unwrap();
@@ -380,6 +387,12 @@ fn map_to_line_items<'a>(
                     for line in lines.iter() {
                         contents.push_str(line);
                         contents.push('\n');
+                    }
+                    if draft {
+                        contents.push_str(&format!(
+                            "  [:pencil:]({})\n",
+                            issue.raw["url"].as_str().unwrap(),
+                        ));
                     }
                 }
             }
@@ -435,6 +448,7 @@ struct Sections {
 fn to_sections<'a>(
     iter: impl IntoIterator<Item = &'a json::Value>,
     mut tracking: &mut TrackingIssues,
+    draft: bool,
 ) -> Sections {
     let mut by_section = HashMap::new();
     by_section.insert("Language", String::new());
@@ -448,7 +462,7 @@ fn to_sections<'a>(
     by_section.insert("Platform Support", String::new());
     by_section.insert("Other", String::new());
 
-    map_to_line_items(iter, &mut tracking, &mut by_section);
+    map_to_line_items(iter, &mut tracking, &mut by_section, draft);
 
     Sections {
         language_relnotes: by_section.remove("Language").unwrap(),

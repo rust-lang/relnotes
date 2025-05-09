@@ -37,7 +37,7 @@ Stabilized APIs
 
 {{stabilized_apis_relnotes}}
 
-These APIs are now stable in const contexts:
+These previously stable APIs are now stable in const contexts:
 
 {{const_stabilized_apis_relnotes}}
 

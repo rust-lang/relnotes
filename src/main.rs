@@ -408,7 +408,7 @@ fn map_to_line_items<'a>(
         let section = if has_tags(o, &["C-future-compatibility"]) {
             "Compatibility Notes"
         } else if has_tags(o, &["T-libs", "T-libs-api"]) {
-            "Library"
+            "Libraries"
         } else if has_tags(o, &["T-lang"]) {
             "Language"
         } else if has_tags(o, &["T-compiler"]) {
@@ -416,11 +416,14 @@ fn map_to_line_items<'a>(
         } else {
             "Other"
         };
-        by_section.get_mut(section).unwrap().push_str(&format!(
-            "- [{title}]({url}/)\n",
-            title = o["title"].as_str().unwrap(),
-            url = o["url"].as_str().unwrap(),
-        ));
+        by_section
+            .get_mut(section)
+            .expect(section)
+            .push_str(&format!(
+                "- [{title}]({url}/)\n",
+                title = o["title"].as_str().unwrap(),
+                url = o["url"].as_str().unwrap(),
+            ));
     }
 }
 

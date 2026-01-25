@@ -23,6 +23,7 @@ const RELNOTES_LABELS: &[&str] = &[
 struct ReleaseNotes {
     version: String,
     date: NaiveDate,
+    draft: bool,
 
     language_relnotes: String,
     compiler_relnotes: String,
@@ -150,6 +151,7 @@ fn main() {
     let relnotes = ReleaseNotes {
         version,
         date: end + six_weeks,
+        draft,
 
         language_relnotes,
         compiler_relnotes,

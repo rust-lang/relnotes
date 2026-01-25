@@ -191,7 +191,7 @@ fn get_issues_by_milestone_inner(
     if ty == "pullRequests" {
         args.insert("states", String::from("[MERGED]"));
     }
-    args.insert("last", String::from("100"));
+    args.insert("first", String::from("100"));
     let mut issues = Vec::new();
 
     loop {
@@ -209,14 +209,15 @@ fn get_issues_by_milestone_inner(
                                     url
                                     body
                                     state
-                                    labels(last: 100) {{
+                                    labels(first: 100) {{
                                         nodes {{
                                             name
                                         }}
                                     }}
                                 }}
+                                totalCount
                                 pageInfo {{
-                                    startCursor
+                                    endCursor
                                 }}
                             }}
                         }}
@@ -248,6 +249,7 @@ fn get_issues_by_milestone_inner(
             .unwrap();
         let status = response.status();
         let json = response.json::<json::Value>().unwrap();
+
         if !status.is_success() {
             panic!("API Error {}: {}", status, json);
         }
@@ -264,11 +266,16 @@ fn get_issues_by_milestone_inner(
         let mut pull_requests = pull_requests_data["nodes"].as_array().unwrap().clone();
         issues.append(&mut pull_requests);
 
-        match &pull_requests_data["pageInfo"]["startCursor"] {
+        match &pull_requests_data["pageInfo"]["endCursor"] {
             json::Value::String(cursor) => {
-                args.insert("before", format!("\"{}\"", cursor));
+                args.insert("after", format!("\"{}\"", cursor));
             }
             json::Value::Null => {
+                // Confirm we gathered all the PRs
+                assert_eq!(
+                    pull_requests_data["totalCount"].as_u64().unwrap(),
+                    issues.len() as u64
+                );
                 break issues;
             }
             _ => unreachable!(),
@@ -313,6 +320,18 @@ impl TrackingIssues {
             let title = o["title"].as_str().unwrap();
             if let Some(tail) = title.strip_prefix(PREFIX) {
                 let for_number = tail[..tail.find(':').unwrap()].parse::<u64>().unwrap();
+
+                if !all
+                    .iter()
+                    .any(|i| i["number"].as_u64().unwrap() == for_number)
+                {
+                    eprintln!(
+                        "Issue #{} is supposed to have relnotes for #{for_number}, \
+                        but #{for_number} is not found in all issues collected",
+                        o["number"]
+                    );
+                }
+
                 let mut sections = HashMap::new();
                 let body = o["body"].as_str().unwrap();
 
@@ -394,6 +413,8 @@ fn map_to_line_items<'a>(
                             issue.raw["url"].as_str().unwrap(),
                         ));
                     }
+                } else {
+                    eprintln!("#{number} has unknown section {:?}", section);
                 }
             }
 

@@ -2,6 +2,8 @@
 **NOTE:** Use the :pencil: links to edit those that have a `relnotes-tracking-issue`,
 and they will be updated when we regenerate the notes periodically (manually).
 
+-----
+
 {% endif -%}
 Version {{version}} ({{date}})
 ==========================
@@ -18,6 +20,7 @@ Compiler
 --------
 {{compiler_relnotes}}
 
+{% if platform_relnotes.len() > 0 -%}
 <a id="{{version}}-Platform-Support"></a>
 
 Platform Support
@@ -28,6 +31,7 @@ Refer to Rust's [platform support page][platform-support-doc]
 for more information on Rust's tiered platform support.
 
 [platform-support-doc]: https://doc.rust-lang.org/rustc/platform-support.html
+{%- endif %}
 
 <a id="{{version}}-Libraries"></a>
 
@@ -52,11 +56,14 @@ Cargo
 -----
 {{cargo_relnotes}}
 
+{%- if rustdoc_relnotes.len() > 0 -%}
 <a id="{{version}}-Rustdoc"></a>
 
 Rustdoc
 -----
 {{rustdoc_relnotes}}
+
+{%- endif -%}
 
 <a id="{{version}}-Compatibility-Notes"></a>
 
@@ -75,8 +82,9 @@ tools.
 
 {{internal_changes_relnotes}}
 
-
+{%- if other_relnotes.len() > 0 %}
 Other
 -----
 
 {{other_relnotes}}
+{%- endif -%}

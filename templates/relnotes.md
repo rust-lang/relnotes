@@ -1,3 +1,8 @@
+{%- if draft -%}
+**NOTE:** Use the :pencil: links to edit those that have a `relnotes-tracking-issue`,
+and they will be updated when we regenerate the notes periodically (manually).
+
+{% endif -%}
 Version {{version}} ({{date}})
 ==========================
 

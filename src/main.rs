@@ -430,7 +430,7 @@ fn map_to_line_items<'a>(
 
         let section = if has_tags(o, &["C-future-compatibility"]) {
             "Compatibility Notes"
-        } else if has_tags(o, &["T-libs", "T-libs-api"]) {
+        } else if has_tags(o, &["T-libs"]) {
             "Libraries"
         } else if has_tags(o, &["T-lang"]) {
             "Language"
